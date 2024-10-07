@@ -15,7 +15,7 @@ class Durak:
         self.num_players = 2
         self.deck = init_deck()
         self.players_hands = [[], []]
-        self.trump_card = self.deck[-1]  # Last card in the deck is the trump card
+        self.trump_card = self.deck[0]  # Last card in the deck is the trump card
         self.trump_suit = self.trump_card[1]
         self.table = []
         self.attacker = 0
