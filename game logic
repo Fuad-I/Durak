@@ -1,0 +1,87 @@
+import numpy as np
+import random
+
+
+def init_deck():
+    suits = [1, 2, 3, 4]
+    ranks = list(range(6, 11))  # 6 to Ace represented by numbers 6-14
+    deck = [(rank, suit) for suit in suits for rank in ranks]
+    random.shuffle(deck)
+    return deck
+
+
+class Durak:
+    def __init__(self):
+        self.num_players = 2
+        self.deck = init_deck()
+        self.players_hands = [[], []]
+        self.trump_card = self.deck[-1]  # Last card in the deck is the trump card
+        self.trump_suit = self.trump_card[1]
+        self.table = []
+        self.attacker = 0
+        self.defender = 1
+        self.attack_in_progress = True
+        self.deal_cards()
+
+    def deal_cards(self):
+        for i in range(self.num_players):
+            self.players_hands[i] = [self.deck.pop() for _ in range(6)]
+
+    def get_initial_state(self):
+        return {
+            'attacker_hand': self.players_hands[self.attacker].copy(),
+            'defender_hand': self.players_hands[self.defender].copy(),
+            'table': [],
+            'trump_card': self.trump_card,
+            'trump_suit': self.trump_suit,
+            'deck_size': len(self.deck),
+            'attack_in_progress': True
+        }
+
+    def get_valid_moves(self, state, player):
+        valid_moves = []
+        player_hand = state['attacker_hand'] if player == self.attacker else state['defender_hand']
+
+        if player == self.attacker:
+            # Attacker can play any card in hand or end the attack
+            valid_moves = player_hand + ["end_attack"]
+        else:
+            # Defender can play a valid defense or take the cards
+            if state['table']:
+                valid_moves = [i for i, card in enumerate(player_hand) if self.is_valid_defense(card, state['table'][-1])]
+            valid_moves.append("take_cards")
+
+        return valid_moves
+
+    def is_valid_defense(self, defend_card, attack_card):
+        if defend_card[1] == attack_card[1] and defend_card[0] > attack_card[0]:
+            return True
+        if defend_card[1] == self.trump_suit and attack_card[1] != self.trump_suit:
+            return True
+        return False
+
+    def get_next_state(self, state, action, player):
+        next_state = state.copy()
+        if action == "end_attack":
+            next_state['attack_in_progress'] = False
+        elif action == "take_cards":
+            # Defender takes all cards from the table
+            next_state['defender_hand'].extend(next_state['table'])
+            next_state['table'] = []
+            next_state['attack_in_progress'] = False
+        else:
+            # Regular card play
+            player_hand = next_state['attacker_hand'] if player == self.attacker else next_state['defender_hand']
+            card = player_hand[action]
+            next_state['table'].append(card)
+            player_hand.pop(action)
+
+        return next_state
+
+    def get_value_and_terminated(self, state):
+        if (not state['attacker_hand'] or not state['defender_hand']) and not state['deck_size']:
+            return 1, True  # Game ends, return value (win)
+        return 0, False  # Game continues
+
+    def get_opponent(self, player):
+        return (player + 1) % 2
