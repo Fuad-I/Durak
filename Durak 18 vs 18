@@ -43,7 +43,7 @@ class Durak:
 
         if player == self.attacker:
             if len(state['table']) > 11:
-                return valid_moves
+                return ["end_attack"]
             if state['table']:
                 # Attacker can play any card in hand or end the attack
                 valid_moves = [card for card in state['attacker_hand'] if card[1] in state['table']]
